@@ -1,9 +1,9 @@
-name: Publish to Chrome Web Store
+name: Publish to Chrome Web Store with Release Notes
 
 on:
   push:
     branches:
-      - main  # Runs only when changes are pushed to main
+      - main
 
 jobs:
   update-version-and-publish:
@@ -29,6 +29,22 @@ jobs:
           git commit -m "Auto-incremented version to ${{ env.VERSION }}"
           git push
 
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          echo "## Release Notes for v${{ env.VERSION }}" > release_notes.md
+          echo "" >> release_notes.md
+          git log --pretty=format:"- %s (%an)" -n 10 >> release_notes.md
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ env.VERSION }}
+          name: "Version ${{ env.VERSION }}"
+          body_path: release_notes.md
+
       - name: Zip the Extension Files
         run: |
           zip -r extension.zip * -x "*.git*" ".github/*"
@@ -40,8 +56,13 @@ jobs:
                -T extension.zip \
                "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.YOUR_APP_ID }}"
 
-      - name: Publish the Extension
+      - name: Publish the Extension with Release Notes
         run: |
           curl -X POST -H "Authorization: Bearer ${{ secrets.CHROME_ACCESS_TOKEN }}" \
                -H "x-goog-api-version: 2" \
+               -H "Content-Type: application/json" \
+               -d '{
+                  "target": "default",
+                  "notes": "'"$(cat release_notes.md | sed ':a;N;$!ba;s/\n/\\n/g')"'" 
+               }' \
                "https://www.googleapis.com/chromewebstore/v1.1/items/${{ secrets.YOUR_APP_ID }}/publish"
