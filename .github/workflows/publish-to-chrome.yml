@@ -1,0 +1,30 @@
+name: Publish to Chrome Web Store
+
+on:
+  push:
+    branches:
+      - main  # Runs only when changes are pushed to main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Zip the Extension Files
+        run: |
+          zip -r extension.zip * -x "*.git*" ".github/*"
+
+      - name: Upload to Chrome Web Store
+        run: |
+          curl -X PUT -H "Authorization: Bearer ${{ secrets.CHROME_ACCESS_TOKEN }}" \
+               -H "x-goog-api-version: 2" \
+               -T extension.zip \
+               "https://www.googleapis.com/upload/chromewebstore/v1.1/items/YOUR_APP_ID"
+
+      - name: Publish the Extension
+        run: |
+          curl -X POST -H "Authorization: Bearer ${{ secrets.CHROME_ACCESS_TOKEN }}" \
+               -H "x-goog-api-version: 2" \
+               "https://www.googleapis.com/chromewebstore/v1.1/items/YOUR_APP_ID/publish"
