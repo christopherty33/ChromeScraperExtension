@@ -32,7 +32,7 @@ Want to improve this extension?
 - Open a Pull Request.
 
 ## License
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [Apache License 2.0](LICENSE).
 
 ## Contact
 💬 **Created by:** Chris (https://github.com/christopherty33)  
