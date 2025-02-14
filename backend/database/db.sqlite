@@ -1,0 +1,1 @@
+sqlite3 database/db.sqlite "CREATE TABLE scraped_data (id INTEGER PRIMARY KEY, content TEXT);"
