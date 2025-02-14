@@ -6,11 +6,28 @@ on:
       - main  # Runs only when changes are pushed to main
 
 jobs:
-  publish:
+  update-version-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: Auto-Increment Version in manifest.json
+        run: |
+          VERSION=$(jq -r '.version' manifest.json)
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          NEW_VERSION="$major.$minor.$(($patch + 1))"
+          jq --arg new_version "$NEW_VERSION" '.version=$new_version' manifest.json > temp.json && mv temp.json manifest.json
+          echo "New version: $NEW_VERSION"
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Commit Updated manifest.json
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add manifest.json
+          git commit -m "Auto-incremented version to ${{ env.VERSION }}"
+          git push
 
       - name: Zip the Extension Files
         run: |
@@ -21,10 +38,10 @@ jobs:
           curl -X PUT -H "Authorization: Bearer ${{ secrets.CHROME_ACCESS_TOKEN }}" \
                -H "x-goog-api-version: 2" \
                -T extension.zip \
-               "https://www.googleapis.com/upload/chromewebstore/v1.1/items/YOUR_APP_ID"
+               "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.YOUR_APP_ID }}"
 
       - name: Publish the Extension
         run: |
           curl -X POST -H "Authorization: Bearer ${{ secrets.CHROME_ACCESS_TOKEN }}" \
                -H "x-goog-api-version: 2" \
-               "https://www.googleapis.com/chromewebstore/v1.1/items/YOUR_APP_ID/publish"
+               "https://www.googleapis.com/chromewebstore/v1.1/items/${{ secrets.YOUR_APP_ID }}/publish"
