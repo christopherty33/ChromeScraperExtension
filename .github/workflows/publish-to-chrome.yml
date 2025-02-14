@@ -1,9 +1,9 @@
-name: Publish to Chrome Web Store with Release Notes
+name: Publish to Chrome Web Store with Changelog
 
 on:
   push:
     branches:
-      - main
+      - main  # Runs only when changes are pushed to main
 
 jobs:
   update-version-and-publish:
@@ -32,10 +32,18 @@ jobs:
       - name: Generate Release Notes
         id: release_notes
         run: |
-          echo "## Release Notes for v${{ env.VERSION }}" > release_notes.md
+          echo "## Version ${{ env.VERSION }} - $(date +'%Y-%m-%d')" > release_notes.md
           echo "" >> release_notes.md
           git log --pretty=format:"- %s (%an)" -n 10 >> release_notes.md
           cat release_notes.md
+
+      - name: Update CHANGELOG.md
+        run: |
+          echo "" >> CHANGELOG.md
+          cat release_notes.md >> CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Updated changelog for version ${{ env.VERSION }}"
+          git push
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
